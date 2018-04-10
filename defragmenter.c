@@ -122,34 +122,18 @@ int readin_inodes() {
   // inode struct size
   inode_size = sizeof(struct inode);
   cur_inode = malloc(inode_size);
-  int inode_offset = sb->inode_offset;
-  inode_num = ((sb->data_offset - inode_offset) * blocksize) / inode_size; 
+  inode_num = ((sb->data_offset - sb->inode_offset) * blocksize) / inode_size; 
 
-  long beforenodes = inode_offset * blocksize;
-  void* before_inodes = malloc(beforenodes);
-  if(fread(before_inodes, 1, beforenodes, inputfile) != beforenodes) {
+  long inodes_region_size = (sb->data_offset - sb->inode_offset) * blocksize;
+
+  void* inodes_region = malloc(inodes_region_size);
+  if(fread(inodes_region, 1, inodes_region_size, inputfile) != inodes_region_size) {
     perror("Read in data before inode region failed: ");
-    free(before_inodes);
+    free(inodes_region);
     return FAIL;
   }
-  input_offset += beforenodes;
+  input_offset += inodes_region_size;
 
-  for(int index = 0; index < inode_num; index++) {
-    if(fread(cur_inode, 1, inode_size, inputfile) != inode_num) {
-      perror("Read in i-node failed: ");
-      free(before_inodes);
-      return FAIL;
-    }
-    input_offset += inode_size;
-    if(cur_inode->nlink == 0) {
-      if(fwrite(cur_inode, 1, inode_size, outputfile) != inode_size) {
-        perror("Write i-node failed: ");
-        free(before_inodes);
-        return FAIL;
-      }
-    } else {
-      printf("needs to read in file info. \n");
-    }
-  }
+  
   return SUCCESS;
 }
