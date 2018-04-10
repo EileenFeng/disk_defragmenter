@@ -29,4 +29,8 @@ struct superblock {
   int free_block; /* head of free block list, index */
 };
 
+// read in boot block and super block; initialized 'sb'
+int read_sysinfo();
+int readin_inodes();
+
 #endif
