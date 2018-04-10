@@ -32,5 +32,6 @@ struct superblock {
 // read in boot block and super block; initialized 'sb'
 int read_sysinfo();
 int readin_inodes();
+int read_write_file();
 
 #endif
