@@ -120,8 +120,11 @@ int main(int argc, char** argv) {
   void* inodes = malloc(4*512);
   fread(inodes, 1, 4*512, outputfile);
   for(int i = 0; i < inode_num; i++) {
-    struct inode* start = (struct inode*)(inode_region + inode_size * i);
+    struct inode* start = (struct inode*)(inodes + inode_size * i);
     printf(" %d inode direct offset next is %d and direct offset is %d\n", i, start->next_inode, start->nlink);
+    if(start->nlink != 0) {
+      printf("iblock first one: %d\n", start->iblocks[0]);
+    }
   }
 
   fclose(inputfile);
@@ -204,7 +207,7 @@ int read_write_file() {
   if(file_counter > 0) {
     for(int i = 0; i < N_IBLOCKS; i++) {
       if(file_counter <= 0) {
-        return SUCCESS;
+        break;
       }
       // dblocks refers to the array of direct indices
       printf("In 1-level the original %dth iblock value is %d\n", i, cur_inode->iblocks[i]);
@@ -213,7 +216,7 @@ int read_write_file() {
       // write each block to output file
       for(int j = 0; j < max_index; j++) {
         if(file_counter <= 0) {
-          return SUCCESS;
+          break;
         }
         void* read_file = data_pointer + dblocks[j] * blocksize;
         //fseek(outputfile, file_offset, SEEK_SET);
@@ -251,14 +254,14 @@ int read_write_file() {
     // outtest indirect table
     for(int i = 0; i < max_index; i++) {
       if(file_counter <= 0) {
-        return SUCCESS;
+        break;
       }
       // direct data indices table
       int* dblocks = (int*)(data_pointer + in2block[i] * blocksize);
 
       for(int j = 0; j < max_index; j++) {
         if(file_counter <= 0) {
-          return SUCCESS;
+          break;
         }
         void* read_file = data_pointer + dblocks[j] * blocksize;
         dblocks[j] = filedata_index;
@@ -305,19 +308,19 @@ int read_write_file() {
     // out-most indirect table
     for(int i = 0; i < max_index; i++) {
       if(file_counter <= 0) {
-        return SUCCESS;
+        break;
       }
 
       int* in2block = (int*)(data_pointer + in3block[i] * blocksize);
       for(int j = 0; j < max_index; j++) {
         if(file_counter <= 0) {
-          return SUCCESS;
+          break;
         }
 
         int* dblocks = (int*)(data_pointer + in2block[j] * blocksize);
         for(int z = 0; z < max_index; z++) {
           if(file_counter <= 0) {
-            return SUCCESS;
+            break;
           }
           void* read_file = data_pointer + dblocks[z] * blocksize;
           //fseek(outputfile, file_offset, SEEK_SET);
