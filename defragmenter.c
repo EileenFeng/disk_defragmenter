@@ -23,8 +23,8 @@ struct inode* cur_inode = NULL;
 
 int blocksize = 0;
 int inode_size = 0;
-long input_offset = 0;
-long output_offset = 0;
+//long input_offset = 0;
+//long output_offset = 0;
 // file_offset keeps track of the current file position in the output file
 long file_offset = 0;
 long disksize = 0;
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
 
-  printf("input_offset is %ld output_offset is %ld\n", input_offset, output_offset);
+  //printf("input_offset is %ld output_offset is %ld\n", input_offset, output_offset);
   if(readin_inodes() == FAIL) {
     printf("Read in and write files failed. \n");
     fclose(inputfile);
@@ -91,15 +91,39 @@ int main(int argc, char** argv) {
     free(input_buffer);
     exit(EXIT_FAILURE);
   }
-
-  if(update_inodes() == FAIL) {
+  printf("data offset is %d\n", filedata_index);
+  if(write_free_blocks() == FAIL) {
     fclose(inputfile);
     fclose(outputfile);
     free(outfile);
     free(input_buffer);
     exit(EXIT_FAILURE);
   }
-  printf("data offset is %d\n", filedata_index);
+
+  if(write_swap_region() == FAIL) {
+    fclose(inputfile);
+    fclose(outputfile);
+    free(outfile);
+    free(input_buffer);
+    exit(EXIT_FAILURE);
+  }
+
+  if(update_inodes_spblock() == FAIL) {
+    fclose(inputfile);
+    fclose(outputfile);
+    free(outfile);
+    free(input_buffer);
+    exit(EXIT_FAILURE);
+  }
+  printf("final file size is %ld\n", file_offset);
+  fseek(outputfile, 1024, SEEK_SET);
+  void* inodes = malloc(4*512);
+  fread(inodes, 1, 4*512, outputfile);
+  for(int i = 0; i < inode_num; i++) {
+    struct inode* start = (struct inode*)(inode_region + inode_size * i);
+    printf(" %d inode direct offset next is %d and direct offset is %d\n", i, start->next_inode, start->nlink);
+  }
+
   fclose(inputfile);
   fclose(outputfile);
   free(outfile);
@@ -126,8 +150,8 @@ int read_sysinfo(){
     perror("Write bootblock, superblock, and inodes region failed: ");
     return FAIL;
   }
-  input_offset += file_offset;
-  output_offset += file_offset;
+  //input_offset += file_offset;
+  //output_offset += file_offset;
 
   inode_region = input_buffer + BOOTSIZE + SUPERBSIZE + sb->inode_offset * blocksize;
   return SUCCESS;
@@ -346,15 +370,61 @@ int read_write_file() {
   return SUCCESS;
 }
 
-int update_inodes() {
+int update_inodes_spblock() {
+  printf("updating......\n");
+  fseek(outputfile, BOOTSIZE, SEEK_SET);
+  if(fwrite((void*)sb, 1, SUPERBSIZE, outputfile) != SUPERBSIZE) {
+    perror("Update super block data failed: ");
+    return FAIL;
+  }
+
   int inode_regionsize = (sb->data_offset - sb->inode_offset) * blocksize;
+  fseek(outputfile, BOOTSIZE + SUPERBSIZE + sb->inode_offset * blocksize, SEEK_SET);
   if(fwrite(inode_region, 1, inode_regionsize, outputfile) != inode_regionsize) {
     perror("Update inode region data failed: ");
     return FAIL;
   }
+  fseek(outputfile, 0L, SEEK_END);
   return SUCCESS;
 }
 
 int write_free_blocks(){
-  return 1;
+  int free_block_nums = sb->swap_offset - sb->data_offset - filedata_index;
+  sb->free_block = filedata_index;
+  printf("Free block number : %d and file_offset before free is %ld\n", free_block_nums, file_offset);
+  void* freeblock_region = input_buffer + file_offset;
+  void* freeblock = freeblock_region;
+  int freeblock_index = sb->free_block;
+  for(int i = 0; i < free_block_nums; i++) {
+    int* value = (int*)freeblock;
+    if(i + 1 == free_block_nums) {
+      *value = -1;
+    } else {
+      *value = freeblock_index + 1;
+    }
+    printf("%d freeblock pointer now is %d\n", i, *value);
+    if(fwrite(freeblock, 1, blocksize, outputfile) != blocksize) {
+      perror("Write free blocks to file failed: ");
+      return FAIL;
+    }
+    freeblock_index ++;
+    file_offset += blocksize;
+    freeblock += blocksize;
+  }
+  printf("after copying all free blocks, file offset is %ld\n", file_offset);
+  printf("swap region offset is %d\n", sb->swap_offset);
+  return SUCCESS;
+}
+
+int write_swap_region() {
+  void* swapregion = input_buffer + file_offset;
+  int swapregion_size = disksize - sb->swap_offset * blocksize - BOOTSIZE - SUPERBSIZE;
+  printf("......swapregion size is %d \n", swapregion_size);
+
+  if(fwrite(swapregion, 1, swapregion_size, outputfile) != swapregion_size) {
+    perror("Write swap region failed: ");
+    return FAIL;
+  }
+  file_offset += swapregion_size;
+  return SUCCESS;
 }
