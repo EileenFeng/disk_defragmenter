@@ -36,5 +36,6 @@ int read_write_file();
 int write_free_blocks();
 int write_swap_region();
 int update_inodes_spblock();
+void print_info();
 
 #endif

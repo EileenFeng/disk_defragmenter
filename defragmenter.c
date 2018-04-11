@@ -21,6 +21,11 @@ void* data_pointer = NULL;
 struct superblock* sb;
 struct inode* cur_inode = NULL;
 
+//here testing
+FILE* inputd;
+//here testing
+
+
 int blocksize = 0;
 int inode_size = 0;
 //long input_offset = 0;
@@ -33,9 +38,15 @@ int filedata_index = 0;
 
 int main(int argc, char** argv) {
   if(argc < 2) {
-    printf("Input format: ./defrag <fragmented disk file> \n");
+    printf("Input format: ./defrag <fragmented disk file>.\n Type in './defrag -h' for more information. \n");
     return FALSE;
   }
+
+  if(strcmp(argv[1], "-h") == SUCCESS) {
+    print_info();
+    return TRUE;
+  }
+  
   char postfix[8] = "-defrag";
   int outfile_len = strlen(argv[1]) + strlen(postfix) + 1;
   // needs to free outfile
@@ -44,7 +55,7 @@ int main(int argc, char** argv) {
   strcpy(outfile, argv[1]);
   strcat(outfile, postfix);
   printf("outfile is %s\n", outfile);
-  
+
   inputfile = fopen(argv[1], "rb");
   if(inputfile == NULL) {
     perror("Open input file failed: ");
@@ -63,7 +74,6 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
   rewind(inputfile);
-  input_buffer = malloc(disksize);
 
   outputfile = fopen(outfile, "wb+");
   if(outputfile == NULL) {
@@ -73,6 +83,11 @@ int main(int argc, char** argv) {
     fclose(inputfile);
     exit(EXIT_FAILURE);
   }
+
+  //here testing
+  inputd = fopen("myresultfile", "wb+");
+  //here testing
+  input_buffer = malloc(disksize);
 
   if(read_sysinfo() == FAIL) {
     printf("Read in boot block, super block, and inodes region failed. \n");
@@ -194,6 +209,10 @@ int read_write_file() {
       void* read_file = data_pointer + cur_inode->dblocks[i] * blocksize;
       //fseek(outputfile, file_offset, SEEK_SET);
 
+      // here testing
+      fwrite(read_file, 1, blocksize, inputd);
+      //here testing
+      
       if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
         perror("Write file data to output failed: ");
         return FAIL;
@@ -225,6 +244,9 @@ int read_write_file() {
         }
         void* read_file = data_pointer + dblocks[j] * blocksize;
 
+	 // here testing
+	fwrite(read_file, 1, blocksize, inputd);
+	//here testing                                                                                                                        	
         //fseek(outputfile, file_offset, SEEK_SET);
         if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
           perror("Write file data to output failed: ");
@@ -271,6 +293,9 @@ int read_write_file() {
         }
         void* read_file = data_pointer + dblocks[j] * blocksize;
 
+	 // here testing
+         fwrite(read_file, 1, blocksize, inputd);
+	 //here testing                                                                                                                        	
 	printf("second layer dblock %d is %d\n", j, dblocks[j]);
         //fseek(outputfile, file_offset, SEEK_SET);
         if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
@@ -331,13 +356,16 @@ int read_write_file() {
           }
           void* read_file = data_pointer + dblocks[z] * blocksize;
 
+	   // here testing
+	  fwrite(read_file, 1, blocksize, inputd);
+	  //here testing                                                                                                                        	  
 	  //fseek(outputfile, file_offset, SEEK_SET);
 	  printf("third layer original dblocks %d aaaafter is %d\n", i, in3block[i]);
           if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
             perror("Write file data to output failed: ");
             return FAIL;
           }
-	  dblocks[z] = filedata_index;   
+	  dblocks[z] = filedata_index;
           filedata_index ++;
           file_offset += blocksize;
           file_counter -= blocksize;
@@ -438,4 +466,11 @@ int write_swap_region() {
   }
   file_offset += swapregion_size;
   return SUCCESS;
+}
+
+void print_info() {
+  printf("* Information about usage of disk defragmenter. \n");
+  printf("* To defragment a disk, run the defragmenter program with \n\t'./defrag <input-disk-image>'\n");
+  printf("* The resulting defragmented disk image will be stored under the original disk image name with postfix '-defrag'. \n");
+  printf("* Example: \n\tcommand line input: './defrag myfile' \n\toutput file: 'myfile-defrag'\n");
 }
