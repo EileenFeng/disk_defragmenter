@@ -36,14 +36,15 @@ int main(int argc, char** argv) {
     printf("Input format: ./defrag <fragmented disk file> \n");
     return FALSE;
   }
-  char postfix[] = "-defrag";
+  char postfix[8] = "-defrag";
   int outfile_len = strlen(argv[1]) + strlen(postfix) + 1;
   // needs to free outfile
   char* outfile = (char*)malloc(sizeof(char) * outfile_len);
-  strncpy(outfile, argv[1], strlen(argv[1]));
-  strncat(outfile, postfix, strlen(postfix));
-  outfile[outfile_len - 1] = '\0';
-
+  outfile[outfile_len -1] = '\0';
+  strcpy(outfile, argv[1]);
+  strcat(outfile, postfix);
+  printf("outfile is %s\n", outfile);
+  
   inputfile = fopen(argv[1], "rb");
   if(inputfile == NULL) {
     perror("Open input file failed: ");
@@ -116,6 +117,8 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
   printf("final file size is %ld\n", file_offset);
+
+  // testing...
   fseek(outputfile, 1024, SEEK_SET);
   void* inodes = malloc(4*512);
   fread(inodes, 1, 4*512, outputfile);
@@ -126,12 +129,13 @@ int main(int argc, char** argv) {
       printf("iblock first one: %d\n", start->iblocks[0]);
     }
   }
+  free(inodes);
+  //testing..
 
   fclose(inputfile);
   fclose(outputfile);
   free(outfile);
   free(input_buffer);
-  free(outfile);
 }
 
 // read in whole file, and write boot, super blocks, and inode regions
@@ -189,6 +193,7 @@ int read_write_file() {
       printf("direct %dth before is %d\n", i, cur_inode->dblocks[i]);
       void* read_file = data_pointer + cur_inode->dblocks[i] * blocksize;
       //fseek(outputfile, file_offset, SEEK_SET);
+
       if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
         perror("Write file data to output failed: ");
         return FAIL;
@@ -219,6 +224,7 @@ int read_write_file() {
           break;
         }
         void* read_file = data_pointer + dblocks[j] * blocksize;
+
         //fseek(outputfile, file_offset, SEEK_SET);
         if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
           perror("Write file data to output failed: ");
@@ -264,13 +270,14 @@ int read_write_file() {
           break;
         }
         void* read_file = data_pointer + dblocks[j] * blocksize;
-        dblocks[j] = filedata_index;
-        printf("second layer dblock %d is %d\n", j, dblocks[j]);
+
+	printf("second layer dblock %d is %d\n", j, dblocks[j]);
         //fseek(outputfile, file_offset, SEEK_SET);
         if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
           perror("Write file data to output failed: ");
           return FAIL;
         }
+	dblocks[j] = filedata_index;
         filedata_index ++;
         file_offset += blocksize;
         file_counter -= blocksize;
@@ -323,13 +330,14 @@ int read_write_file() {
             break;
           }
           void* read_file = data_pointer + dblocks[z] * blocksize;
-          //fseek(outputfile, file_offset, SEEK_SET);
-          dblocks[z] = filedata_index;
-          printf("third layer original dblocks %d aaaafter is %d\n", i, in3block[i]);
+
+	  //fseek(outputfile, file_offset, SEEK_SET);
+	  printf("third layer original dblocks %d aaaafter is %d\n", i, in3block[i]);
           if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
             perror("Write file data to output failed: ");
             return FAIL;
           }
+	  dblocks[z] = filedata_index;   
           filedata_index ++;
           file_offset += blocksize;
           file_counter -= blocksize;
