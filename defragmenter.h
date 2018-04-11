@@ -33,5 +33,6 @@ struct superblock {
 int read_sysinfo();
 int readin_inodes();
 int read_write_file();
+int update_inodes();
 
 #endif
