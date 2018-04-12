@@ -95,11 +95,11 @@ int main(int argc, char** argv) {
     free(input_buffer);
     exit(EXIT_FAILURE);
   }
-
+  fclose(inputfile);
   //printf("input_offset is %ld output_offset is %ld\n", input_offset, output_offset);
   if(readin_inodes() == FAIL) {
     printf("Read in and write files failed. \n");
-    fclose(inputfile);
+    //fclose(inputfile);
     fclose(outputfile);
     free(outfile);
     free(input_buffer);
@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
   }
 
   if(write_free_blocks() == FAIL) {
-    fclose(inputfile);
+    //fclose(inputfile);
     fclose(outputfile);
     free(outfile);
     free(input_buffer);
@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
   }
 
   if(write_swap_region() == FAIL) {
-    fclose(inputfile);
+    //fclose(inputfile);
     fclose(outputfile);
     free(outfile);
     free(input_buffer);
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
   }
 
   if(update_inodes_spblock() == FAIL) {
-    fclose(inputfile);
+    //fclose(inputfile);
     fclose(outputfile);
     free(outfile);
     free(input_buffer);
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
   fclose(inputd);
   //testing..
 
-  fclose(inputfile);
+  //fclose(inputfile);
   fclose(outputfile);
   free(outfile);
   free(input_buffer);
