@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
   }
 
   //here testing
-  inputd = fopen("myresultfile", "wb+");
+  inputd = fopen("data_three", "wb+");
   //here testing
   input_buffer = malloc(disksize);
 
