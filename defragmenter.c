@@ -43,9 +43,20 @@ int inode_num = 0;
 int filedata_index = 0;
 
 int main(int argc, char** argv) {
-  if(argc < 2) {
-    printf("Input format: ./defrag <fragmented disk file>.\n Type in './defrag -h' for more information. \n");
-    return FALSE;
+  if(DUMPDATA == TRUE) {
+    if(argc < 3) {
+      if(strcmp(argv[1], "-h") == SUCCESS) {
+        print_info();
+        return TRUE;
+      }
+      printf("Input format: ./defrag <fragmented disk file> <data_file_name>.\n Type in './defrag -h' for more information. \n");
+      return FALSE;
+    }
+  } else {
+    if(argc < 2) {
+      printf("Input format: ./defrag <fragmented disk file>.\n Type in './defrag -h' for more information. \n");
+      return FALSE;
+    }
   }
 
   if(strcmp(argv[1], "-h") == SUCCESS) {
@@ -89,7 +100,7 @@ int main(int argc, char** argv) {
   }
 
   if(DUMPDATA == TRUE){
-    inputd = fopen("data", "wb+");
+    inputd = fopen(argv[2], "wb+");
   }
 
   input_buffer = malloc(disksize);
@@ -442,8 +453,11 @@ int write_swap_region() {
 }
 
 void print_info() {
-  printf("* Information about usage of disk defragmenter. \n");
-  printf("* To defragment a disk, run the defragmenter program with \n\t'./defrag <input-disk-image>'\n");
-  printf("* The resulting defragmented disk image will be stored under the original disk image name with postfix '-defrag'. \n");
+  printf("* Information about usage of disk defragmenter. \n\n");
+  printf("* To defragment a disk, run the defragmenter program with \n\t'./defrag <input-disk-image>'\n\n");
+  printf("* The resulting defragmented disk image will be stored under the original disk image name with postfix '-defrag'.\n\n");
+  printf("* If the '-DDUMP' flag is specified during compilation.");
+  printf("* Then an extra input is required for outputting file data. To run the program with the '-DDUMP' flag, type in");
+  printf(" './defrag <disk_image> <filedata_name>'. Then a file with '<filedata_name>' will be generated, which contains only the file data of the input disk image.\n\n");
   printf("* Example: \n\tcommand line input: './defrag myfile' \n\toutput file: 'myfile-defrag'\n");
 }
