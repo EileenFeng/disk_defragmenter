@@ -54,7 +54,6 @@ int main(int argc, char** argv) {
   outfile[outfile_len -1] = '\0';
   strcpy(outfile, argv[1]);
   strcat(outfile, postfix);
-  printf("outfile is %s\n", outfile);
 
   inputfile = fopen(argv[1], "rb");
   if(inputfile == NULL) {
@@ -66,7 +65,6 @@ int main(int argc, char** argv) {
   // if file size <= 0 then exit
   fseek(inputfile, 0L, SEEK_END);
   disksize = ftell(inputfile);
-  printf("disk size is %ld\n", disksize);
   if(disksize <= 0) {
     printf("Input file has no content. \n");
     free(outfile);
@@ -85,7 +83,7 @@ int main(int argc, char** argv) {
   }
 
   //here testing
-  inputd = fopen("data_three", "wb+");
+  inputd = fopen("data_5", "wb+");
   //here testing
   input_buffer = malloc(disksize);
 
@@ -107,7 +105,7 @@ int main(int argc, char** argv) {
     free(input_buffer);
     exit(EXIT_FAILURE);
   }
-  printf("data offset is %d\n", filedata_index);
+
   if(write_free_blocks() == FAIL) {
     fclose(inputfile);
     fclose(outputfile);
@@ -131,7 +129,6 @@ int main(int argc, char** argv) {
     free(input_buffer);
     exit(EXIT_FAILURE);
   }
-  printf("final file size is %ld\n", file_offset);
 
   // testing...
   fseek(outputfile, 1024, SEEK_SET);
@@ -164,7 +161,6 @@ int read_sysinfo(){
   // write boot block, super block and inode_region
   sb = (struct superblock*)(input_buffer + BOOTSIZE);
   blocksize = sb->size;
-  printf("block size is %d inode offset %d data offset %d\n", blocksize, sb->inode_offset, sb->data_offset);
   file_offset = BOOTSIZE + SUPERBSIZE + sb->data_offset * blocksize;
   data_pointer = input_buffer + file_offset;
 
@@ -173,8 +169,6 @@ int read_sysinfo(){
     perror("Write bootblock, superblock, and inodes region failed: ");
     return FAIL;
   }
-  //input_offset += file_offset;
-  //output_offset += file_offset;
 
   inode_region = input_buffer + BOOTSIZE + SUPERBSIZE + sb->inode_offset * blocksize;
   return SUCCESS;
@@ -184,18 +178,13 @@ int readin_inodes() {
   // inode struct size
   inode_size = sizeof(struct inode);
   inode_num = ((sb->data_offset - sb->inode_offset) * blocksize) / inode_size;
-  printf("inode size is %d and number is %d\n", inode_size, inode_num);
   for(int i = 0; i < inode_num; i++) {
     cur_inode = (struct inode*)(inode_region + i * inode_size);
     // if inode is used
     if(cur_inode->nlink != 0) {
       if(read_write_file() == FAIL) {
         return FAIL;
-      } else {
-        printf("--------Finished %i writing files file_offset is %ld\n", i, file_offset);
       }
-    } else {
-      printf("----------- inode %d\n", i);
     }
   }
   return SUCCESS;
@@ -206,9 +195,7 @@ int read_write_file() {
   // write in direct blocks
   for(int i = 0; i < N_DBLOCKS; i++) {
     if(file_counter > 0) {
-      printf("direct %dth before is %d\n", i, cur_inode->dblocks[i]);
       void* read_file = data_pointer + cur_inode->dblocks[i] * blocksize;
-      //fseek(outputfile, file_offset, SEEK_SET);
 
       // here testing
       fwrite(read_file, 1, blocksize, inputd);
@@ -222,7 +209,6 @@ int read_write_file() {
       filedata_index ++;
       file_offset += blocksize;
       file_counter -= blocksize;
-      printf("direct %dth after is %d\n", i, cur_inode->dblocks[i]);
     }
   }
 
@@ -235,7 +221,6 @@ int read_write_file() {
         break;
       }
       // dblocks refers to the array of direct indices
-      printf("In 1-level the original %dth iblock value is %d\n", i, cur_inode->iblocks[i]);
       int* dblocks= (int*)(data_pointer + cur_inode->iblocks[i] * blocksize);
 
       // write each block to output file
@@ -254,14 +239,12 @@ int read_write_file() {
           return FAIL;
         }
         dblocks[j] = filedata_index;
-        printf("In 1-level the dblocks %dth iblock value is %d\n", i, dblocks[j]);
         filedata_index ++;
         file_offset += blocksize;
         file_counter -= blocksize;
       }
 
       cur_inode->iblocks[i] = filedata_index;
-      printf("In 1-level the the  %dth iblock value is %d\n", i, cur_inode->iblocks[i]);
       // write dblocks indices table to disk
       if(fwrite(dblocks, 1, blocksize, outputfile) != blocksize) {
         perror("Write index table for 'iblocks'failed: ");
@@ -277,7 +260,6 @@ int read_write_file() {
 
   // read from 2-level indirect blocks
   if(file_counter > 0) {
-    printf("second layer original i2block is %d\n", cur_inode->i2block);
     int* in2block = (int*)(data_pointer + cur_inode->i2block * blocksize);
 
     // outtest indirect table
@@ -297,7 +279,7 @@ int read_write_file() {
 	 // here testing
          fwrite(read_file, 1, blocksize, inputd);
 	 //here testing
-	printf("second layer dblock %d is %d\n", j, dblocks[j]);
+
         //fseek(outputfile, file_offset, SEEK_SET);
         if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
           perror("Write file data to output failed: ");
@@ -310,7 +292,7 @@ int read_write_file() {
       }
 
       in2block[i] = filedata_index;
-      printf("second layer in2blocks %d is %d\n", i, in2block[i]);
+
       // write dblocks indices table to disk
       if(fwrite(dblocks, 1, blocksize, outputfile) != blocksize) {
         perror("Write index table for 'iblocks'failed: ");
@@ -321,7 +303,6 @@ int read_write_file() {
     }
 
     cur_inode->i2block = filedata_index;
-    printf("second layer after i2block is %d\n", cur_inode->i2block);
     // write in2block indices table to disk
     if(fwrite(in2block, 1, blocksize, outputfile) != blocksize) {
       perror("Write index table for 'iblocks'failed: ");
@@ -335,7 +316,6 @@ int read_write_file() {
   }
 
   if(file_counter > 0) {
-    printf("third layer original i333block is %d\n", cur_inode->i2block);
     int* in3block = (int*)(data_pointer + cur_inode->i3block * blocksize);
 
     // out-most indirect table
@@ -360,8 +340,7 @@ int read_write_file() {
 	   // here testing
 	  fwrite(read_file, 1, blocksize, inputd);
 	  //here testing
-	  //fseek(outputfile, file_offset, SEEK_SET);
-	  printf("third layer original dblocks %d aaaafter is %d\n", i, in3block[i]);
+
           if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
             perror("Write file data to output failed: ");
             return FAIL;
@@ -373,7 +352,6 @@ int read_write_file() {
         }
 
         in2block[j] = filedata_index;
-        printf("third layer original in22block %d aaaafter is %d\n", i, in3block[i]);
         // write in2block indices table to disk
         if(fwrite(dblocks, 1, blocksize, outputfile) != blocksize) {
           perror("Write index table for 'iblocks'failed: ");
@@ -384,7 +362,6 @@ int read_write_file() {
       }
 
       in3block[i] = filedata_index;
-      printf("third layer original in3block %d aaaafter is %d\n", i, in3block[i]);
       // write in2block indices table to disk
       if(fwrite(in2block, 1, blocksize, outputfile) != blocksize) {
         perror("Write index table for 'iblocks'failed: ");
@@ -395,7 +372,6 @@ int read_write_file() {
     }
 
     cur_inode->i3block = filedata_index;
-    printf("third layer original i333block aaaafter is %d\n", cur_inode->i3block);
     // write in3block indices table to disk
     if(fwrite(in3block, 1, blocksize, outputfile) != blocksize) {
       perror("Write index table for 'iblocks'failed: ");
@@ -431,10 +407,10 @@ int update_inodes_spblock() {
 int write_free_blocks(){
   int free_block_nums = sb->swap_offset - sb->data_offset - filedata_index;
   sb->free_block = filedata_index;
-  printf("Free block number : %d and file_offset before free is %ld\n", free_block_nums, file_offset);
   void* freeblock_region = input_buffer + file_offset;
   void* freeblock = freeblock_region;
   int freeblock_index = sb->free_block;
+  printf("free block number is %d\n", free_block_nums);
   for(int i = 0; i < free_block_nums; i++) {
     int* value = (int*)freeblock;
     if(i + 1 == free_block_nums) {
@@ -442,7 +418,6 @@ int write_free_blocks(){
     } else {
       *value = freeblock_index + 1;
     }
-    printf("%d freeblock pointer now is %d\n", i, *value);
     if(fwrite(freeblock, 1, blocksize, outputfile) != blocksize) {
       perror("Write free blocks to file failed: ");
       return FAIL;
@@ -451,8 +426,6 @@ int write_free_blocks(){
     file_offset += blocksize;
     freeblock += blocksize;
   }
-  printf("after copying all free blocks, file offset is %ld\n", file_offset);
-  printf("swap region offset is %d\n", sb->swap_offset);
   return SUCCESS;
 }
 
