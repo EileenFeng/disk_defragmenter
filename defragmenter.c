@@ -10,6 +10,12 @@
 #define BOOTSIZE 512
 #define SUPERBSIZE 512
 #define POINTERSIZE 4
+#define DUMPDATA 0
+
+#ifdef DUMP
+  #undef DUMPDATA
+  #define DUMPDATA 1
+#endif
 
 FILE* inputfile;
 FILE* outputfile;
@@ -82,9 +88,10 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
 
-  //here testing
-  inputd = fopen("data_5", "wb+");
-  //here testing
+  if(DUMPDATA == TRUE){
+    inputd = fopen("data", "wb+");
+  }
+
   input_buffer = malloc(disksize);
 
   if(read_sysinfo() == FAIL) {
@@ -96,10 +103,9 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
   fclose(inputfile);
-  //printf("input_offset is %ld output_offset is %ld\n", input_offset, output_offset);
+
   if(readin_inodes() == FAIL) {
     printf("Read in and write files failed. \n");
-    //fclose(inputfile);
     fclose(outputfile);
     free(outfile);
     free(input_buffer);
@@ -107,7 +113,6 @@ int main(int argc, char** argv) {
   }
 
   if(write_free_blocks() == FAIL) {
-    //fclose(inputfile);
     fclose(outputfile);
     free(outfile);
     free(input_buffer);
@@ -115,7 +120,6 @@ int main(int argc, char** argv) {
   }
 
   if(write_swap_region() == FAIL) {
-    //fclose(inputfile);
     fclose(outputfile);
     free(outfile);
     free(input_buffer);
@@ -123,29 +127,16 @@ int main(int argc, char** argv) {
   }
 
   if(update_inodes_spblock() == FAIL) {
-    //fclose(inputfile);
     fclose(outputfile);
     free(outfile);
     free(input_buffer);
     exit(EXIT_FAILURE);
   }
 
-  // testing...
-  fseek(outputfile, 1024, SEEK_SET);
-  void* inodes = malloc(4*512);
-  fread(inodes, 1, 4*512, outputfile);
-  for(int i = 0; i < inode_num; i++) {
-    struct inode* start = (struct inode*)(inodes + inode_size * i);
-    printf(" %d inode direct offset next is %d and direct offset is %d\n", i, start->next_inode, start->nlink);
-    if(start->nlink != 0) {
-      printf("iblock first one: %d\n", start->iblocks[0]);
-    }
+  if(DUMPDATA == TRUE) {
+    fclose(inputd);
   }
-  free(inodes);
-  fclose(inputd);
-  //testing..
 
-  //fclose(inputfile);
   fclose(outputfile);
   free(outfile);
   free(input_buffer);
@@ -198,7 +189,9 @@ int read_write_file() {
       void* read_file = data_pointer + cur_inode->dblocks[i] * blocksize;
 
       // here testing
-      fwrite(read_file, 1, blocksize, inputd);
+      if(DUMPDATA == TRUE) {
+        fwrite(read_file, 1, blocksize, inputd);
+      }
       //here testing
 
       if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
@@ -230,9 +223,11 @@ int read_write_file() {
         }
         void* read_file = data_pointer + dblocks[j] * blocksize;
 
-	 // here testing
-	fwrite(read_file, 1, blocksize, inputd);
-	//here testing
+        // here testing
+        if(DUMPDATA == TRUE) {
+          fwrite(read_file, 1, blocksize, inputd);
+        }
+        //here testing
         //fseek(outputfile, file_offset, SEEK_SET);
         if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
           perror("Write file data to output failed: ");
@@ -276,16 +271,18 @@ int read_write_file() {
         }
         void* read_file = data_pointer + dblocks[j] * blocksize;
 
-	 // here testing
-         fwrite(read_file, 1, blocksize, inputd);
-	 //here testing
+        // here testing
+        if(DUMPDATA == TRUE) {
+          fwrite(read_file, 1, blocksize, inputd);
+        }
+        //here testing
 
         //fseek(outputfile, file_offset, SEEK_SET);
         if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
           perror("Write file data to output failed: ");
           return FAIL;
         }
-	dblocks[j] = filedata_index;
+        dblocks[j] = filedata_index;
         filedata_index ++;
         file_offset += blocksize;
         file_counter -= blocksize;
@@ -337,15 +334,17 @@ int read_write_file() {
           }
           void* read_file = data_pointer + dblocks[z] * blocksize;
 
-	   // here testing
-	  fwrite(read_file, 1, blocksize, inputd);
-	  //here testing
+          // here testing
+          if(DUMPDATA == TRUE) {
+            fwrite(read_file, 1, blocksize, inputd);
+          }
+          //here testing
 
           if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
             perror("Write file data to output failed: ");
             return FAIL;
           }
-	  dblocks[z] = filedata_index;
+          dblocks[z] = filedata_index;
           filedata_index ++;
           file_offset += blocksize;
           file_counter -= blocksize;
