@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     print_info();
     return TRUE;
   }
-  
+
   char postfix[8] = "-defrag";
   int outfile_len = strlen(argv[1]) + strlen(postfix) + 1;
   // needs to free outfile
@@ -145,6 +145,7 @@ int main(int argc, char** argv) {
     }
   }
   free(inodes);
+  fclose(inputd);
   //testing..
 
   fclose(inputfile);
@@ -212,7 +213,7 @@ int read_write_file() {
       // here testing
       fwrite(read_file, 1, blocksize, inputd);
       //here testing
-      
+
       if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
         perror("Write file data to output failed: ");
         return FAIL;
@@ -246,7 +247,7 @@ int read_write_file() {
 
 	 // here testing
 	fwrite(read_file, 1, blocksize, inputd);
-	//here testing                                                                                                                        	
+	//here testing
         //fseek(outputfile, file_offset, SEEK_SET);
         if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
           perror("Write file data to output failed: ");
@@ -295,7 +296,7 @@ int read_write_file() {
 
 	 // here testing
          fwrite(read_file, 1, blocksize, inputd);
-	 //here testing                                                                                                                        	
+	 //here testing
 	printf("second layer dblock %d is %d\n", j, dblocks[j]);
         //fseek(outputfile, file_offset, SEEK_SET);
         if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
@@ -358,7 +359,7 @@ int read_write_file() {
 
 	   // here testing
 	  fwrite(read_file, 1, blocksize, inputd);
-	  //here testing                                                                                                                        	  
+	  //here testing
 	  //fseek(outputfile, file_offset, SEEK_SET);
 	  printf("third layer original dblocks %d aaaafter is %d\n", i, in3block[i]);
           if(fwrite(read_file, 1, blocksize, outputfile) != blocksize) {
