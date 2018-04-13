@@ -14,3 +14,6 @@
 
  2. Files
   - program files: 'defragment.c', 'defragment.h', 'Makefile'
+
+ 3. Limitations
+  -  Tested using ziting's large data(posted on github for CS355), which covers one data block in 3-level indirect blocks. Have not tested files larger than ziting's datafile.   

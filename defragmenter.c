@@ -397,7 +397,6 @@ int read_write_file() {
 }
 
 int update_inodes_spblock() {
-  printf("updating......\n");
   fseek(outputfile, BOOTSIZE, SEEK_SET);
   if(fwrite((void*)sb, 1, SUPERBSIZE, outputfile) != SUPERBSIZE) {
     perror("Update super block data failed: ");
@@ -420,7 +419,6 @@ int write_free_blocks(){
   void* freeblock_region = input_buffer + file_offset;
   void* freeblock = freeblock_region;
   int freeblock_index = sb->free_block;
-  printf("free block number is %d\n", free_block_nums);
   for(int i = 0; i < free_block_nums; i++) {
     int* value = (int*)freeblock;
     if(i + 1 == free_block_nums) {
@@ -442,7 +440,6 @@ int write_free_blocks(){
 int write_swap_region() {
   void* swapregion = input_buffer + file_offset;
   int swapregion_size = disksize - sb->swap_offset * blocksize - BOOTSIZE - SUPERBSIZE;
-  printf("......swapregion size is %d \n", swapregion_size);
 
   if(fwrite(swapregion, 1, swapregion_size, outputfile) != swapregion_size) {
     perror("Write swap region failed: ");
